@@ -6,11 +6,15 @@ Created on Fri Apr 16 16:01:55 2021
 @author: santealtamura
 """
 
+import nltk
 from nltk.tokenize import RegexpTokenizer
 from nltk.corpus import wordnet as wn
 import random
 import string
+from nltk.tokenize import word_tokenize
+from nltk.stem.wordnet import WordNetLemmatizer
 
+#il tokenizer utilizzato rimuove la punteggiatura
 tokenizer = RegexpTokenizer(r'\w+')
 
 """Word sense disambiguation (WSD) is an open problem of
@@ -34,19 +38,35 @@ def lesk_algorithm(word, sentence_words):
             
 def get_signature(sense):
     signature = []
-    for word in tokenizer.tokenize(sense.definition()): #tokenizzo la definizione del synset
+    for word in tokenize_sentence(sense.definition()): #tokenizzo la definizione del synset
         signature.append(word)
     for example in sense.examples(): #tokenizzo ogni esempio del synset
-        for word in tokenizer.tokenize(example):
+        for word in tokenize_sentence(example):
             signature.append(word)
     return signature #la signature conterrà tutte le parole presenti nella definizione del senso e negli esempi
 
-#Rimuove le stopwords da una lista di parola
+#Effettua la lemmatizzazione e rimuove le stowords da una lista di parole
 def remove_stopwords(words_list):
     stopwords_list = get_stopwords()
     for word in words_list:
         if word in stopwords_list:
             words_list.remove(word)
+    return words_list
+
+
+#Tokenizza la frase in input e ne affettua anche la lemmatizzazione della sue parole
+def tokenize_sentence(sentence):
+    words_list = []
+    lmtzr = WordNetLemmatizer()
+    for tag in nltk.pos_tag(word_tokenize(sentence)):
+        if (tag[1][:2] == "NN"):
+            words_list.append(lmtzr.lemmatize(tag[0], pos = wn.NOUN))
+        elif (tag[1][:2] == "VB"):
+             words_list.append(lmtzr.lemmatize(tag[0], pos = wn.VERB))
+        elif (tag[1][:2] == "RB"):
+             words_list.append(lmtzr.lemmatize(tag[0], pos = wn.ADV))
+        elif (tag[1][:2] == "JJ"):
+             words_list.append(lmtzr.lemmatize(tag[0], pos = wn.ADJ))
     return words_list
 
 #Restituisce la l'insieme di stopwords dal file delle stopwords

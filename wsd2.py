@@ -14,9 +14,9 @@ from statistics import mean
 tokenizer = RegexpTokenizer(r'\w+')
 
 
-EXECUTIONS = 10
-INDEXES_NUM = 5000 #è il limite, partendo da 0, di sentence che possono essere testate relative al database SemCor
-RANGE = 50 #è il numero di sentence che effettivamente verranno testate            
+EXECUTIONS = 10 #numero massimo di esecuzioni
+INDEXES_NUM = 7000 #è il limite, partendo da 0, di sentence che possono essere testate relative al database SemCor
+RANGE = 50 #è il numero di sentence che effettivamente verranno testate in ogni esecuzione        
 
 sentences_tag = semcor.tagged_sents()
 sentences = semcor.sents()
@@ -26,7 +26,7 @@ sentences_sem = semcor.tagged_sents(tag = "sem")
 accuracy_list = []
 for execution in range(1,EXECUTIONS + 1):
     randomlist = functions.get_random_indexes(INDEXES_NUM,RANGE)
-    checked = 0
+    checked = 0 
     evaluated = 0
     print("Esecuzione n. ", execution)
     for index in randomlist:
@@ -44,7 +44,8 @@ for execution in range(1,EXECUTIONS + 1):
         else:
             sentence = sentences[index]
         print("Frase: ",sentence)
-        sentence_words = functions.remove_punctuation(sentence)
+        #sentence_words = functions.remove_punctuation(sentence)
+        sentence_words = functions.remove_punctuation(functions.tokenize_sentence(' '.join(word for word in sentence)))
         evaluated = evaluated + 1
         print("Parola da disambiguare: ",word)
         best_sense = str(functions.lesk_algorithm(word, sentence_words))
@@ -67,6 +68,7 @@ for execution in range(1,EXECUTIONS + 1):
 
 print()
 print("Esecuzioni: ",EXECUTIONS)
+print("Lista delle accuratezze: ", accuracy_list)
 print("Accuratezza media: ",mean(accuracy_list))
 #_____________________MAIN_________________________________________________
 

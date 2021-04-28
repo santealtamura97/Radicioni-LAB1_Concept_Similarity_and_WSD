@@ -33,21 +33,22 @@ randomlist = functions.get_random_indexes(INDEXES_NUM,RANGE)
 checked = 0
 evaluated = 0
 for index in randomlist:
-    word = functions.get_random_noun(functions.get_dictionary_tag(sentences_tag[index]))
+    word = functions.get_random_noun(functions.get_dictionary_tag(sentences_tag[index],sentences_sem[index]))
     new = False
     while (not word):
         new = True
         new_index = randomlist[0]
         while new_index in randomlist:
            new_index = functions.get_random_indexes(INDEXES_NUM,1)[0]
-        word = functions.get_random_noun(functions.get_dictionary_tag(sentences_tag[new_index]))  
+        word = functions.get_random_noun(functions.get_dictionary_tag(sentences_tag[new_index],sentences_sem[new_index]))  
     print("====================")
     if new:
         sentence = sentences[new_index]
     else:
         sentence = sentences[index]
     print("Frase: ",sentence)
-    sentence_words = functions.remove_punctuation(sentence)
+    #sentence_words = functions.remove_punctuation(sentence)
+    sentence_words = functions.remove_punctuation(functions.tokenize_sentence(' '.join(word for word in sentence)))
     evaluated = evaluated + 1
     print("Parola da disambiguare: ",word)
     best_sense = str(functions.lesk_algorithm(word, sentence_words))
