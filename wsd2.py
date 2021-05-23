@@ -43,12 +43,9 @@ for execution in range(1,EXECUTIONS + 1):
             sentence = sentences[new_index]
         else:
             sentence = sentences[index]
-        print("Frase: ",sentence)
-        #sentence_words = functions.remove_punctuation(sentence)
-        sentence_words = functions.remove_punctuation(functions.tokenize_sentence(' '.join(word for word in sentence)))
         evaluated = evaluated + 1
         print("Parola da disambiguare: ",word)
-        best_sense = str(functions.lesk_algorithm(word, sentence_words))
+        best_sense = str(functions.lesk_algorithm(word, ' '.join(word for word in sentence), word_type='ALL'))
         print("Senso attribuito dall'algoritmo di Lesk: ",best_sense)
         if new:
             target_lemma = functions.get_synset_target_for_word_in_sentence(word,sentences_sem[new_index])

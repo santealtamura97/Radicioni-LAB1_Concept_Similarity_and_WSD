@@ -10,9 +10,9 @@ import nltk
 from nltk.tokenize import RegexpTokenizer
 from nltk.corpus import wordnet as wn
 import random
-import string
 from nltk.tokenize import word_tokenize
 from nltk.stem.wordnet import WordNetLemmatizer
+import re
 
 #il tokenizer utilizzato rimuove la punteggiatura
 tokenizer = RegexpTokenizer(r'\w+')
@@ -23,35 +23,52 @@ identifying which sense of a word (i.e. meaning) is used in any
 given sentence, when the word has a number of distinct senses
 (polysemy)."""
 
-
-def lesk_algorithm(word, sentence_words):
+#Algoritmo di Lesk
+def lesk_algorithm(word, sentence, word_type):
     best_sense = wn.synsets(word)[0]
     max_overlap = 0
-    context = remove_stopwords(sentence_words)
-    for sense in wn.synsets(word):
-        signature = remove_stopwords(get_signature(sense))
-        overlap = len(list(set(signature) & set(context))) #overlap
+    max_signature = []
+    print("Frase: ", sentence)
+    context = pre_processing(sentence)
+    
+    if word_type == 'NOUN':
+        synsets = wn.synsets(word, pos=wn.NOUN)
+    elif word_type == 'ALL':
+        synsets = wn.synsets(word)
+        
+    for sense in synsets:
+        signature = get_signature(sense)
+        overlap = len(list(signature & context)) #overlap
         if overlap > max_overlap:
             max_overlap = overlap
             best_sense = sense
-    return best_sense
+            max_signature = signature
             
+    print("Contesto della frase: ", context)
+    print("max Signature: ", max_signature) #signature del senso con più overlap con il contesto della sentence
+    return best_sense
+
+#Signature di un senso di WordNet      
 def get_signature(sense):
-    signature = []
-    for word in tokenize_sentence(sense.definition()): #tokenizzo la definizione del synset
-        signature.append(word)
+    signature = set()
+    for word in pre_processing(sense.definition()): #tokenizzo la definizione del synset
+        signature.add(word)
     for example in sense.examples(): #tokenizzo ogni esempio del synset
-        for word in tokenize_sentence(example):
-            signature.append(word)
+        for word in pre_processing(example):
+            signature.add(word)
     return signature #la signature conterrà tutte le parole presenti nella definizione del senso e negli esempi
+
+"""Funzioni di supporto"""
+
+#il pre-processing consiste nella tokenizzazione, lemmatizzazione,
+#rimozione della punteggiatura e delle stopwords di una sentence
+def pre_processing(sentence):
+    return set(remove_stopwords(tokenize_sentence(remove_punctuation(sentence))))
 
 #Effettua la lemmatizzazione e rimuove le stowords da una lista di parole
 def remove_stopwords(words_list):
     stopwords_list = get_stopwords()
-    for word in words_list:
-        if word in stopwords_list:
-            words_list.remove(word)
-    return words_list
+    return [value for value in words_list if value not in stopwords_list]
 
 
 #Tokenizza la frase in input e ne affettua anche la lemmatizzazione della sue parole
@@ -77,6 +94,13 @@ def get_stopwords():
         stopwords_list.append(word.replace('\n', ''))
     stopwords.close()
     return stopwords_list
+
+#Rimuove la punteggiatura da una sentence
+#Restituisce la sentence senza punteggiature
+def remove_punctuation(sentence):
+    return re.sub(r'[^\w\s]','',sentence)
+
+"""Funzioni utili"""
 
 #Restituisce un sostantivo random presente nel dizionario associato ad una sentence
 def get_random_noun(dictionary_tag):
@@ -130,15 +154,6 @@ def get_dictionary_tag(sentence_tag,sentence_sem):
                      dictionary_tag[tag] = [word]             
     return dictionary_tag
 
-#Rimuove la punteggiatura da una lista di parole
-def remove_punctuation(words_list):
-    new_words_list = []
-    for word in words_list:
-        temp = word
-        if not temp.strip(string.punctuation) == "":
-            new_word = word.lower()
-            new_words_list.append(new_word)
-    return new_words_list
 
 #Restituisce una lista di indici random di numero pari a ran e come limite indexes_num
 def get_random_indexes(indexes_num, ran):
