@@ -65,7 +65,7 @@ def get_signature(sense):
 def pre_processing(sentence):
     return set(remove_stopwords(tokenize_sentence(remove_punctuation(sentence))))
 
-#Effettua la lemmatizzazione e rimuove le stowords da una lista di parole
+#rimuove le stowords da una lista di parole
 def remove_stopwords(words_list):
     stopwords_list = get_stopwords()
     return [value for value in words_list if value not in stopwords_list]

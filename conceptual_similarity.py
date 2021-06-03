@@ -53,15 +53,12 @@ def leakcock_chodorow(sense1, sense2):
     return -math.log(numerator/denominator)
 
 #------------ SIMILARITY -------------#
-
-"""
-def shortest_path_len(sense1, sense2):
-    lowest_common_ancestor = LC_subsumer(sense1,sense2)
-    if not lowest_common_ancestor:
-        return math.inf
-    shortest_path = wordnet_bfs(sense1, lowest_common_ancestor) + wordnet_bfs(sense2, lowest_common_ancestor)
-    return shortest_path
-"""
+#restituisce un dizionario di iperonimi del senso in input con la relativa profondità
+#rispetto al senso in input
+#esempio per il senso 'home.n.01':
+"""{Synset('home.n.01'): 0, Synset('residence.n.01'): 1, Synset('address.n.02'): 2, 
+Synset('geographic_point.n.01'): 3, Synset('point.n.02'): 4, Synset('location.n.01'): 5, 
+Synset('object.n.01'): 6, Synset('physical_entity.n.01'): 7, Synset('entity.n.01'): 8}"""
 def hypernym_paths(sense):
     queue = deque([(sense, 0)])
     path = {}
@@ -77,46 +74,29 @@ def hypernym_paths(sense):
 
     return path
 
+
+#restituisce il percorso più breve tra due sensi di wordnet
 def shortest_path(sense1,sense2):
     if sense1 == sense2:
         return 0
     
-    dict1 = hypernym_paths(sense1)
-    dict2 = hypernym_paths(sense2)
+    dict1 = hypernym_paths(sense1) #dizionario iperonimi del sense1
+    dict2 = hypernym_paths(sense2) #dizionario iperonimi del sense2
     
-    min_dist = float("inf")
+    min_dist = float("inf") #distanza minima inizialmente uguale a +infinito
+    #per ogni senso del dizionario degli iperonimi di sense1
+    #cerca di trovare il match con un senso del secondo dizionario.
+    #la distanza minima sarà la somma minima delle profondità dei sensi matchati
+    #rispetto al senso di partenza (sense1, sense2)
     for ss, dist1 in dict1.items():
-        dist2 = dict2.get(ss)
+        dist2 = dict2.get(ss) 
         if not dist2:
             dist2 = float("inf")
         min_dist = min(min_dist, dist1 + dist2)
     return float("inf") if math.isinf(min_dist) else min_dist
 """
-def wordnet_bfs(sense, lowest_common_ancestor):
-    #bfs search from sense1 to lowest_common_ancestor
-    visited = []
-    queue = []
-    visited.append(sense)
-    queue.append(sense)
-    
-    count = 0
-    stop = False
-    while queue:
-        s = queue.pop(0)
-        for synset in s.hypernyms():
-            if synset not in visited:
-                visited.append(synset)
-                queue.append(synset)
-            if synset == lowest_common_ancestor:
-                stop = True
-                break
-        count = count + 1
-        if stop == True:
-            break
-    return count
-"""
 #Restituisce il lowest common ancestor di due sensi, cioè l'iperonimo comune
-#più vicino ai due sensi
+#più vicino ai due sensi. se ne ho più di uno prendo quello più profondo, quindi meno generale
 #listahyperonymsens: lista di liste, ogni elemento rappresenta la lista degli iperonimi della lista precendente
 def LC_subsumer(sense1, sense2):
     senselist1 = [sense1]
@@ -124,8 +104,8 @@ def LC_subsumer(sense1, sense2):
     listahyperonymssens1 = [senselist1] 
     listahyperonymssens2 = [senselist2]
     while(True):  
-        if senselist1 == senselist2 == []: #quando sono entrambi vuoti vuol dire che i due sensi non hanno un LCS
-            break #non c'è intersezione tra tutti gli iperonimi del primo senso con tutti gli iperonimi del secondo senso
+        if senselist1 == senselist2 == []: #quando sono entrambi vuoti vuol dire che abbiamo raggiunto il limite
+            break #terminiamo il ciclo
         senselist1 = hypernyms_list(senselist1)
         senselist2 = hypernyms_list(senselist2)
         listahyperonymssens1.append(senselist1)
@@ -134,16 +114,13 @@ def LC_subsumer(sense1, sense2):
         for list2 in listahyperonymssens2:
             intersection = list(set(list1) & set(list2))
             if intersection:
-                return intersection[0]  #TODO scegliere quale LCS si vuole se sono più di uno
-                                        #quello più vicino alla radice o quello più vicino ai sensi?
-                                        #per ora sto restituendo il primo della lista
-#restituisce una lista di iperonimi per una lista di sensi
-def hypernyms_list(senselist):
-    lista = []
-    for sense in senselist:
-        for sense_hyp in sense.hypernyms():
-            lista.append(sense_hyp)
-    return lista
+                deepest = intersection[0]
+                for sense in intersection:
+                    if depth(sense) < depth(deepest):
+                        deepest = sense
+                return deepest #restituisce il senso con profondità maggiore rispetto alla radice
+"""
+
 #restituisce la profondità di un senso in wordnet
 #la profondità è vista come il massimo percorso dal senso alla radice
 #cioè il path più lungo di tutti i path degli iperonimi del senso          
@@ -152,13 +129,49 @@ def depth(sense):
         return 0
     return max([len(path) for path in all_hypernym_paths(sense)])
 
+#Restituisce il lowest common ancestor di due sensi, cioè l'iperonimo comune
+#più vicino ai due sensi. se ne ho più di uno prendo quello più profondo,
+#quindi meno generale
+def LC_subsumer(sense1, sense2):
+    if sense1 == sense2:
+        return sense1
+    
+    dict1 = hypernym_paths(sense1) #dizionario iperonimi del sense1
+    dict2 = hypernym_paths(sense2) #dizionario iperonimi del sense2
+    
+    min_dist = float("inf")
+    candidates = []
+    for ss, dist1 in dict1.items():
+        dist2 = dict2.get(ss) 
+        if not dist2:
+            dist2 = float("inf")
+        else:
+            if (dist1 + dist2) <= min_dist:
+                min_dist = (dist1 + dist2)
+                candidates.append(ss) 
+    if candidates:
+        deepest = candidates[0]
+        for sense in candidates:
+            if depth(sense) < depth(deepest):
+                deepest = sense
+        return deepest #restituisce il senso con profondità maggiore rispetto alla radice
+                
+#restituisce una lista di iperonimi per una lista di sensi
+def hypernyms_list(senselist):
+    lista = []
+    for sense in senselist:
+        for sense_hyp in sense.hypernyms():
+            lista.append(sense_hyp)
+    return lista
+
+
 #Classe enum con la quale specifichiamo il tipo di similarità utilizzata
 class Similarity_Type(enum.Enum):
     wu_palmer_similarity = 1
     shortest_path = 2
     leakcock_chodorow = 3
 
-similarity_type = Similarity_Type.wu_palmer_similarity
+similarity_type = Similarity_Type.leakcock_chodorow
 
 
 #_____________________MAIN_________________________________________________
@@ -188,7 +201,33 @@ with open('utils/WordSim353.csv') as csv_file:
             print("=============================")
         line_count = line_count + 1
 print()
+
+"""
+PEARSON
+    +1 - Complete positive correlation
+    +0.8 - Strong positive correlation
+    +0.6 - Moderate positive correlation
+    0 - no correlation whatsoever
+    -0.6 - Moderate negative correlation
+    -0.8 - Strong negative correlation
+    -1 - Complete negative correlation
+    Restituisce una matrice M = nxn quadrata dove n = 2 (numero di inoput) dove M (i,j) è
+    la correlazione tra la variabile casuale i e j. Poichè la correlazione
+    tra una variabile e se stessa è 1, tutte le voci diagonali (i,i) sono uguali a 1
+    
+"""
+
 print("Pearson Correlation: ",np.corrcoef(assignments, targets))
+
+
+"""
+SPEARMAN
+    Misura non parametrica della monotonicità della relazione
+    tra due dataset. Varia da +1 a -1 con 0 che implica la non correlazione
+    1 indica che se x cresce y cresce
+    -1 indica che se x cresce y descresce
+"""
+
 print()
 print("Spearman Correlation: ",sp.stats.spearmanr(assignments, targets))
 #_____________________MAIN_________________________________________________
