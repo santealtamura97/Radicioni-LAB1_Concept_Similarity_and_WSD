@@ -7,21 +7,20 @@ Created on Fri Apr 16 16:01:55 2021
 """
 
 import nltk
-from nltk.tokenize import RegexpTokenizer
 from nltk.corpus import wordnet as wn
 import random
 from nltk.tokenize import word_tokenize
 from nltk.stem.wordnet import WordNetLemmatizer
 import re
-
-#il tokenizer utilizzato rimuove la punteggiatura
-tokenizer = RegexpTokenizer(r'\w+')
+from random import randrange
 
 """Word sense disambiguation (WSD) is an open problem of
 natural language processing, which comprises the process of
 identifying which sense of a word (i.e. meaning) is used in any
 given sentence, when the word has a number of distinct senses
 (polysemy)."""
+
+"""Funzioni principali"""
 
 #Algoritmo di Lesk
 def lesk_algorithm(word, sentence, word_type):
@@ -31,6 +30,8 @@ def lesk_algorithm(word, sentence, word_type):
     print("Frase: ", sentence)
     context = pre_processing(sentence)
     
+    #se il tipo di parola è un nome allora cerco solo tra i nomi in wordnet
+    #altrimenti prendo tutti i synset associati a quel termine
     if word_type == 'NOUN':
         synsets = wn.synsets(word, pos=wn.NOUN)
     elif word_type == 'ALL':
@@ -58,6 +59,7 @@ def get_signature(sense):
             signature.add(word)
     return signature #la signature conterrà tutte le parole presenti nella definizione del senso e negli esempi
 
+
 """Funzioni di supporto"""
 
 #il pre-processing consiste nella tokenizzazione, lemmatizzazione,
@@ -68,7 +70,7 @@ def pre_processing(sentence):
 #rimuove le stowords da una lista di parole
 def remove_stopwords(words_list):
     stopwords_list = get_stopwords()
-    return [value for value in words_list if value not in stopwords_list]
+    return [value.lower() for value in words_list if value.lower() not in stopwords_list]
 
 
 #Tokenizza la frase in input e ne affettua anche la lemmatizzazione della sue parole
@@ -155,15 +157,12 @@ def get_dictionary_tag(sentence_tag,sentence_sem):
     return dictionary_tag
 
 
-#Restituisce una lista di indici random di numero pari a ran e come limite indexes_num
-def get_random_indexes(indexes_num, ran):
-    randomlist = []
-    for i in range(0,ran):    
-        n = random.randint(0,indexes_num)
-        while n in randomlist:
-            n = random.randint(0,indexes_num)
-        randomlist.append(n)
-    return randomlist
+def get_random_index(index_evaluated, INDEXES_NUM):
+    while True:
+        index = randrange(INDEXES_NUM)
+        if index not in index_evaluated:
+            return index
+    
 
 #Restituisce il synset target per una parola in una sentence
 def get_synset_target_for_word_in_sentence(noun,sentence):
